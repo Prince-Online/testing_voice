@@ -10,13 +10,16 @@ recognition.maxAlternatives = 1;
 
 const synth = window.speechSynthesis;
 
+// Function for bot replies using SpeechSynthesis
 const botReply = (message, pitch = 4, volume = 4, rate = 0.9) => {
   const utterThis = new SpeechSynthesisUtterance(message);
   utterThis.pitch = pitch;
   utterThis.volume = volume;
+  utterThis.rate = rate;
   synth.speak(utterThis);
 };
 
+// Speech recognition result handler
 recognition.onresult = async (event) => {
   const transcript = event.results[0][0].transcript.toLowerCase();
   output.textContent = `You said: "${transcript}"`;
@@ -52,21 +55,35 @@ recognition.onresult = async (event) => {
   }
 };
 
+// Error handler for speech recognition
 recognition.onerror = (event) => {
   output.textContent = 'Error occurred in recognition: ' + event.error;
 };
 
+// Start speech recognition on button click
 startBtn.addEventListener('click', () => {
-  recognition.start();
-  output.textContent = 'Listening...';
-  loader.style.display = 'flex';
-  musicLoader.play();
+  // Check for browser support for speech recognition
+  if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+    recognition.start();
+    output.textContent = 'Listening...';
+    loader.style.display = 'flex';
+    if (musicLoader.play) {
+      musicLoader.play().catch((error) => {
+        console.log("Autoplay prevented: ", error);
+      });
+    }
+  } else {
+    botReply('Sorry, your browser does not support speech recognition', 1, 1);
+  }
 });
 
+// Reset UI when speech recognition ends
 recognition.onend = () => {
   loader.style.display = 'none';
-  musicLoader.pause();
-  musicLoader.currentTime = 0;
+  if (musicLoader.pause) {
+    musicLoader.pause();
+    musicLoader.currentTime = 0;
+  }
 };
 
 // Function to fetch contact details using Google Contacts API
@@ -95,3 +112,8 @@ const fetchContactDetails = async (contactName) => {
     throw new Error('Failed to fetch contact details');
   }
 };
+
+// Check if the browser supports SpeechRecognition and SpeechSynthesis
+if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+  alert("Sorry, your browser doesn't support speech recognition.");
+}
